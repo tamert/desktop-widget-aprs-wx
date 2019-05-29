@@ -50,9 +50,6 @@ style: """
     text-weight: bold
     text-anchor: middle
 
-
-   
-
   .date.mask
     stroke: #999
     stroke-width: 5px
