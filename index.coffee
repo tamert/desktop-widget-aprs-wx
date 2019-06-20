@@ -1,5 +1,4 @@
 ilName='Bartin' #default
-
 refreshFrequency: 60000
 istNo = '15000'
 
