@@ -1,4 +1,4 @@
-ilName='Bartin' #default
+ilName='İzmir' #default
 refreshFrequency: 60000
 istNo = '15000'
 
