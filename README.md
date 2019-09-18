@@ -1,6 +1,6 @@
 # Übersicht APRS.FI WX Weather Widget
 
-![Screenshot](screenshot.jpg)
+![Screenshot](screnshot.jpg)
 
 Made for [Übersicht](http://tracesof.net/uebersicht/)
 
