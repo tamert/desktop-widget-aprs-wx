@@ -1,5 +1,7 @@
 # Übersicht APRS.FI WX Weather Widget
 
+![Screenshot](screenshot.jpg)
+
 Made for [Übersicht](http://tracesof.net/uebersicht/)
 
 Uses the  the [aprs.fi](https://aprs.fi/page/api "aprs.fi api") to obtain the weather information.
