@@ -1,6 +1,7 @@
-ilName='İzmir' #default
-refreshFrequency: 60000
-istNo = '15000'
+callsign='LTBL' # WX CALLSING
+key='YOUR_API_KEY' # visit http://aprs.fi/page/api
+api='https://api.aprs.fi/api/'
+
 
 style: """
   top: 5%
@@ -8,16 +9,6 @@ style: """
   margin: 0 0 0 -100px
   font-family: Berlin, Helvetica Neue
   color: #FFF
-
-  @font-face
-    font-family Weather
-    src url(icons.svg) format('svg')
-
-  .icon
-    font-family: Weather
-    font-size: 40px
-    text-anchor: middle
-    alignment-baseline: middle
 
   .temp
     font-size: 20px
@@ -32,6 +23,12 @@ style: """
   .icon-bg
     fill: rgba(#FFF, 0.8)
 
+  #icon
+    fill: rgba(#FFF, 0.8)
+    position: absolute
+    margin-top: 48px
+    margin-left: 55px 
+
   .summary
     text-align: center
     border-top: 1px solid #FFF
@@ -40,6 +37,7 @@ style: """
     font-size: 14px
     max-width: 300px
     line-height: 1.4
+
 
   .date, .location
     color : #FFF
@@ -52,21 +50,27 @@ style: """
   .date.mask
     stroke: #999
     stroke-width: 5px
+
+
+  .station
+    color : #FFF
+    stroke: #FFF
+    stroke-width: 1px
+    font-size: 12px
 """
 
 command: "echo {}"
 
 render: (o) -> """
+  <img src="wx.svg" id='icon' width='80px'>
   <svg #{@svgNs} width="200px" height="200px" >
     <defs xmlns="http://www.w3.org/2000/svg">
       <mask id="icon_mask">
         <rect width="100px" height="100px" x="50" y="50" fill="#fff"
               transform="rotate(45 100 100)"/>
-        <text class="icon"
-              x="50%" y='45%'></text>
 
         <text class="temp"
-              x="50%" y='65%' dx='3px'></text>
+              x="50%" y='67%' dx='3px'></text>
       </mask>
       <mask id="text_mask">
         <rect x='0' y="0" width="200px" height="200px" fill='#fff'/>
@@ -82,7 +86,6 @@ render: (o) -> """
     </defs>
 
 
-
     <rect class='icon-bg' width="200px" height="200px" x="0" y="0"
 
           mask="url(#icon_mask)"/>
@@ -91,12 +94,18 @@ render: (o) -> """
           textLength='90px'
           transform="rotate(-45 100 100)"
           x="50%" y='42px'></text>
+
     <text class="date"
           textLength='90px'
           transform="rotate(45 100 100)"
           x="50%" y='42px'></text>
+
+    <text class="station"
+          x="" y='169px'>loading...</text>
   </svg>
+
   <div class='summary'></div>
+
 """
 
 svgNs: 'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
@@ -104,25 +113,31 @@ svgNs: 'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/x
 
 command: (callback) ->
   isOnline = window.navigator.onLine
-  console.log isOnline
   storage = window.localStorage
+  isCache = storage.getItem('is_cache')
 
-  storage.setItem('online', false)
+  if(isCache==null)
+    isCache = true
+  else
+    storage.setItem('is_cache', parseInt(isCache)+1)
+    if parseInt(storage.getItem('is_cache'))==100
+      isCache = true
+    else
+      isCache = false
 
-  if isOnline
-    cmd = "curl -s 'http://212.175.180.28/api/merkezler?il="+ilName+"'"
-    @run cmd, (error, data) ->
-      arr = JSON.parse(data)
-      sondurumIstNo =  arr[0].sondurumIstNo
-      storage.setItem('sondurumIstNo', sondurumIstNo)
+  #console.log isCache
 
-    cmd = "curl -s 'http://212.175.180.28/api/sondurumlar?istno="+storage.sondurumIstNo+"'"
+  if isOnline && isCache 
+    #console.log 'api'
+    cmd = "curl -s '"+api+"get?name="+callsign+"&what=wx&apikey="+key+"&format=json'"
     @run cmd, (error, data) ->
       storage.setItem('meteoroloji', data)
+      storage.setItem('is_cache', 0)
 
       callback(error, data)
 
   else
+    #console.log 'cache'
     callback(null, storage.getItem('meteoroloji'))
 
 afterRender: (domEl) ->
@@ -131,35 +146,9 @@ afterRender: (domEl) ->
     [lat, lon] = [coords.latitude, coords.longitude]
   
     @refresh()
-    
-iconMapping:
-  "A": "\uf00d"
-  "AB": "\uf00d"
-  "PB": "\uf013"
-  "CB": "\uf013"
-  "HY": "\uf019"
-  "Y": "\uf019"
-  "KY": "\uf019"
-  "KKY": "\uf01b"
-  "HKY": "\uf01b"
-  "K": "\uf01b"
-  "KYK": "\uf01b"
-  "HSY": "\uf019"
-  "SY": "\uf019"
-  "KSY": "\uf019"
-  "MSY": "\uf019"
-  "DY": "\uf019"
-  "GSY": "\uf019"
-  "KGSY": "\uf019"
-  "SIS": "\uf014"
-  "PUS": "\uf014"
-  "DNM": "\uf014"
-  "KF": "\uf021"
-  "R": "\uf021"
-  "GKR": "\uf021"
-  "KKR": "\uf021"
-  "SCK": "\uf00c"
-  "SGK": "\uf019"
+
+
+
 
 degToCompass: (num) ->
   val = parseInt((num/22.5)+.5)
@@ -171,20 +160,22 @@ update: (output, domEl) ->
   storage = window.localStorage
   
   now  = JSON.parse(storage.meteoroloji)
-  now_arr = now[0]
+  now_arr = now.entries[0]
 
-  console.log now
+  #console.log now.entries
+
 
   if now_arr
 
     d = new Date()
     n = d.getDay()
 
-    $(domEl).find('.temp').prop 'textContent', now_arr.sicaklik+'°'
-    $(domEl).find('.location').prop('textContent', 'Nem: '+now_arr.nem)
-    $(domEl).find('.icon')[0]?.textContent = @iconMapping[now_arr.hadiseKodu]
+    #console.log now_arr
+    $(domEl).find('.temp').prop 'textContent', now_arr.temp+'°'
+    $(domEl).find('.station').prop 'textContent', now_arr.name
+    $(domEl).find('.location').prop('textContent', 'Nem: '+now_arr.humidity)
     $(domEl).find('.date').prop('textContent',@dayMapping[n])
-    $(domEl).find('.summary').prop('textContent', 'Rüzgar : '+  @degToCompass(now_arr.ruzgarYon) + ' ' + now_arr.ruzgarHiz.toFixed(0) + ' KM ' )
+    $(domEl).find('.summary').prop('textContent', 'Rüzgar : '+  @degToCompass(now_arr.wind_direction) + ' ' + now_arr.wind_speed + ' KM ' )
 
   return
 
@@ -199,20 +190,6 @@ dayMapping:
   6: 'Cumartesi'
 
 
-getIcon: (data) ->
-  return @iconMapping['unknown'] unless data
-
-  if data.icon.indexOf('cloudy') > -1
-    if data.cloudCover < 0.25
-      @iconMapping["clear-day"]
-    else if data.cloudCover < 0.5
-      @iconMapping["mostly-clear-day"]
-    else if data.cloudCover < 0.75
-      @iconMapping["partly-cloudy-day"]
-    else
-      @iconMapping["cloudy"]
-  else
-    @iconMapping[data.icon]
 
 getDate: (utcTime) ->
   date  = new Date(0)
