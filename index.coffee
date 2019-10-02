@@ -2,7 +2,6 @@ callsign='LTBL' # WX CALLSING
 key='YOUR_API_KEY' # visit http://aprs.fi/page/api
 api='https://api.aprs.fi/api/'
 
-
 style: """
   top: 5%
   left: 50%
@@ -114,13 +113,12 @@ svgNs: 'xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/x
 command: (callback) ->
   isOnline = window.navigator.onLine
   storage = window.localStorage
-  isCache = storage.getItem('is_cache')
-
+  isCache = storage.getItem('isCache')
   if(isCache==null)
     isCache = true
   else
-    storage.setItem('is_cache', parseInt(isCache)+1)
-    if parseInt(storage.getItem('is_cache'))==100
+    storage.setItem('isCache', (parseInt(isCache)+1))
+    if parseInt(storage.getItem('isCache'))>50
       isCache = true
     else
       isCache = false
@@ -132,7 +130,7 @@ command: (callback) ->
     cmd = "curl -s '"+api+"get?name="+callsign+"&what=wx&apikey="+key+"&format=json'"
     @run cmd, (error, data) ->
       storage.setItem('meteoroloji', data)
-      storage.setItem('is_cache', 0)
+      storage.setItem('isCache', 0)
 
       callback(error, data)
 
@@ -147,13 +145,9 @@ afterRender: (domEl) ->
   
     @refresh()
 
-
-
-
 degToCompass: (num) ->
   val = parseInt((num/22.5)+.5)
-
-  arr = ["Kuzey'den","Kuzeydoğu'dan","Kuzeydoğu'dan","Kuzeydoğu'dan","Doğu'dan","Güneydoğu'dan", "Güneydoğu'dan", "Güneydoğu'dan","Güney'den","Güneybatı'dan","Güneybatı'dan","Güneybatı'dan","Batı'dan","Kuzeybatı'dan","Kuzeybatı'dan","Kuzeybatı'dan"]
+  arr = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
   return arr[(val % 16)]
 
 update: (output, domEl) ->
@@ -164,7 +158,6 @@ update: (output, domEl) ->
 
   #console.log now.entries
 
-
   if now_arr
 
     d = new Date()
@@ -173,26 +166,22 @@ update: (output, domEl) ->
     #console.log now_arr
     $(domEl).find('.temp').prop 'textContent', now_arr.temp+'°'
     $(domEl).find('.station').prop 'textContent', now_arr.name
-    $(domEl).find('.location').prop('textContent', 'Nem: '+now_arr.humidity)
+    $(domEl).find('.location').prop('textContent', 'humidity: '+now_arr.humidity)
     $(domEl).find('.date').prop('textContent',@dayMapping[n])
-    $(domEl).find('.summary').prop('textContent', 'Rüzgar : '+  @degToCompass(now_arr.wind_direction) + ' ' + now_arr.wind_speed + ' KM ' )
+    $(domEl).find('.summary').prop('textContent', 'Wind : '+  @degToCompass(now_arr.wind_direction) + ' ' + now_arr.wind_speed + ' KM ' )
 
   return
 
-  
 dayMapping:
-  0: 'Pazar'
-  1: 'Pazartesi'
-  2: 'Salı'
-  3: 'Çarşamba'
-  4: 'Perşembe'
-  5: 'Cuma'
-  6: 'Cumartesi'
-
-
+  0: "Sunday"
+  1: "Monday"
+  2: "Tuesday"
+  3: "Wednesday"
+  4: "Thursday"
+  5: "Friday"
+  6: "Saturday"
 
 getDate: (utcTime) ->
   date  = new Date(0)
   date.setUTCSeconds(utcTime)
   date
-
